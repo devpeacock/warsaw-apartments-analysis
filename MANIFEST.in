@@ -1,0 +1,8 @@
+include README.md
+include requirements.txt
+include environment.yml
+include setup.py
+recursive-include data/reference *.geojson
+recursive-include sql *.sql
+recursive-include streamlit_app *.py
+recursive-include src *.py

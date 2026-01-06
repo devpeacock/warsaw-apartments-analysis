@@ -1,0 +1,23 @@
+name: apartments
+channels:
+  - defaults
+dependencies:
+  - python=3.11
+  - pandas>=2.0
+  - numpy>=1.24
+  - matplotlib
+  - seaborn
+  - scikit-learn>=1.3
+  - scipy
+  - sqlalchemy
+  - duckdb
+  - psycopg2
+  - jupyterlab
+  - ipykernel
+  - geopandas
+  - pip
+  - pip:
+    - streamlit>=1.30
+    - plotly>=5.17
+    - patsy
+    - statsmodels
