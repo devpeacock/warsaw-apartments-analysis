@@ -1,7 +1,12 @@
 # streamlit_app/components/sidebar.py
 from __future__ import annotations
 
+import sys
+from pathlib import Path
 from typing import Any, Dict, Optional, Tuple
+
+# Add src/ to Python path for apartments package
+sys.path.insert(0, str(Path(__file__).parent.parent.parent / "src"))
 
 import pandas as pd
 import streamlit as st
