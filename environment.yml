@@ -17,6 +17,7 @@ dependencies:
   - geopandas
   - pip
   - pip:
+    - .
     - streamlit>=1.30
     - plotly>=5.17
     - patsy
