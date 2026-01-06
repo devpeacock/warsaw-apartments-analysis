@@ -15,8 +15,13 @@ Warsaw apartment price analysis using Python, DuckDB, and Streamlit.
 
 One command does everything: creates environment, installs packages, builds database, and verifies setup.
 
-**Windows:**
-```bash
+**Windows (PowerShell):**
+```powershell
+.\setup_windows.bat
+```
+
+**Windows (CMD):**
+```cmd
 setup_windows.bat
 ```
 
