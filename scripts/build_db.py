@@ -1,7 +1,18 @@
+"""Build DuckDB database from processed parquet files.
+
+Creates base tables for sale and rent listings, static views (deduplicated by property),
+and analytical marts for time series analysis. The database includes data quality checks
+and aggregated views for city-month metrics and yield calculations.
+"""
+
 # scripts/build_db.py
 from pathlib import Path
 import duckdb
 
+
+# ============================================================================
+# Constants
+# ============================================================================
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 PROCESSED = PROJECT_ROOT / "data" / "processed"
@@ -14,8 +25,12 @@ RENT_PARQUET = PROCESSED / "rent_long.parquet"
 INT_COLS = ["rooms", "floor", "floors_total", "build_year"]
 
 
+# ============================================================================
+# Helper Functions
+# ============================================================================
+
 def _create_int_cast_sql(cols: list[str]) -> str:
-    """Generate SQL to cast integer columns, filtering sentinel values."""
+    """Generate SQL clauses to cast columns to INTEGER, filtering out sentinel values (-999999)."""
     cast_clauses = ",\n            ".join(
         # Try to cast to DOUBLE first, then filter sentinel values, then cast to INTEGER
         f"CASE WHEN TRY_CAST({col} AS DOUBLE) != -999999.0 THEN CAST(TRY_CAST({col} AS DOUBLE) AS INTEGER) ELSE NULL END AS {col}_int"
@@ -25,21 +40,26 @@ def _create_int_cast_sql(cols: list[str]) -> str:
 
 
 def _drop_and_rename_int_cols(con: duckdb.DuckDBPyConnection, table: str, cols: list[str]) -> None:
-    """Drop original columns and rename _int versions back to original names."""
+    """Drop original columns and rename temporary _int columns back to original names."""
     for col in cols:
         con.execute(f"ALTER TABLE {table} DROP {col};")
     for col in cols:
         con.execute(f"ALTER TABLE {table} RENAME {col}_int TO {col};")
 
 
+# ============================================================================
+# Database Building
+# ============================================================================
+
 def main() -> None:
+    """Build DuckDB database with base tables, static views, and analytical marts."""
     PROCESSED.mkdir(parents=True, exist_ok=True)
 
     con = duckdb.connect(str(DB_PATH))
     con.execute("PRAGMA threads=4;")
     con.execute("PRAGMA enable_progress_bar=true;")
 
-    # 1) Base tables
+    # Create base tables from parquet files with integer column casting
     con.execute("DROP TABLE IF EXISTS listings_sale;")
     con.execute("DROP TABLE IF EXISTS listings_rent;")
 
@@ -72,7 +92,7 @@ def main() -> None:
     
     _drop_and_rename_int_cols(con, "listings_rent", INT_COLS)
 
-    # 2) Helpful views
+    # Create combined view of all listings (sale + rent)
     con.execute("DROP VIEW IF EXISTS listings_all;")
     con.execute(
         """
@@ -83,7 +103,7 @@ def main() -> None:
         """
     )
 
-        # 2b) Static analysis views: one row per property_fingerprint (dedup across months)
+    # Create static analysis views: one row per property (deduplicated across months)
     con.execute("DROP VIEW IF EXISTS listings_sale_static;")
     con.execute(
         """
@@ -121,7 +141,8 @@ def main() -> None:
         WHERE rn = 1;
         """
     )
-    # 2c) Combined static view - sale + rent
+    
+    # Create combined static view (sale + rent properties)
     con.execute("DROP VIEW IF EXISTS listings_static_all;")
     con.execute(
         """
@@ -132,8 +153,7 @@ def main() -> None:
         """
     )
 
-
-    # 3) Simple QA checks (fail fast would be nicer, but minimum sanity here)
+    # Run data quality checks and print results
     qa = con.execute(
         """
         SELECT market, COUNT(*) AS n,
@@ -147,8 +167,7 @@ def main() -> None:
     ).fetchall()
     print("QA:", qa)
 
-    # 4) Create marts as views (you can materialize later)
-    # City-month: sale
+    # Create analytical marts: aggregated metrics by city and month
     con.execute("DROP VIEW IF EXISTS mart_city_month_sale;")
     con.execute(
         """
@@ -166,7 +185,7 @@ def main() -> None:
         """
     )
 
-    # City-month: rent
+    # City-month aggregated metrics: rent
     con.execute("DROP VIEW IF EXISTS mart_city_month_rent;")
     con.execute(
         """
@@ -184,7 +203,7 @@ def main() -> None:
         """
     )
 
-    # Yield proxy: rent median / sale median (monthly rent per m2 vs sale price per m2)
+    # City-month yield proxy: ratio of annual rent to sale price
     con.execute("DROP VIEW IF EXISTS mart_city_month_yield_proxy;")
     con.execute(
         """
@@ -207,6 +226,10 @@ def main() -> None:
     con.close()
     print(f"Built DuckDB at: {DB_PATH}")
 
+
+# ============================================================================
+# Main Execution
+# ============================================================================
 
 if __name__ == "__main__":
     main()
