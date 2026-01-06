@@ -1,3 +1,5 @@
+"""Time series dashboard showing month-over-month trends for sale, rent, and yield metrics."""
+
 # streamlit_app/pages/4_Time_Series.py
 import streamlit as st
 import pandas as pd
@@ -17,17 +19,11 @@ from components.loaders import (
 from components.ui import inject_global_css, header, kpi_card, card
 from apartments.viz import apply_dashboard_theme
 
-# -------------------------
-# Page UI
-# -------------------------
-inject_global_css()
-header("Time Series", "Month-over-month trends for sale, rent, and yield")
 
-sale = load_mart_city_month_sale()
-rent = load_mart_city_month_rent()
-yld = load_mart_city_month_yield_proxy()
+# ============================================================================
+# Helper Functions - Trend Calculation
+# ============================================================================
 
-# Calculate trends (latest vs previous month)
 def calculate_mom_trend(df, col):
     """Calculate month-over-month percentage change for time series data."""
     if len(df) < 2:
@@ -38,6 +34,29 @@ def calculate_mom_trend(df, col):
         return None
     return ((latest - prev) / prev) * 100
 
+
+# ============================================================================
+# Page Setup
+# ============================================================================
+
+inject_global_css()
+header("Time Series", "Month-over-month trends for sale, rent, and yield")
+
+
+# ============================================================================
+# Data Loading
+# ============================================================================
+
+sale = load_mart_city_month_sale()
+rent = load_mart_city_month_rent()
+yld = load_mart_city_month_yield_proxy()
+
+
+# ============================================================================
+# KPI Cards with Trends
+# ============================================================================
+
+# Calculate month-over-month trends for latest period
 trend_sale_ppm2 = calculate_mom_trend(sale, 'median_ppm2')
 trend_rent_ppm2 = calculate_mom_trend(rent, 'median_ppm2')
 trend_yield = calculate_mom_trend(yld, 'gross_yield_proxy')
@@ -57,6 +76,12 @@ st.markdown("")
 
 st.markdown("")
 
+
+# ============================================================================
+# Time Series Visualizations
+# ============================================================================
+
+# Sale price per m² trend
 with card():
     st.markdown("### Sale: median price per m²")
     st.caption("Monthly trend of median sale price per square meter in Warsaw.")
@@ -66,6 +91,7 @@ with card():
 
 st.markdown("")
 
+# Rent price per m² trend
 with card():
     st.markdown("### Rent: median rent per m²")
     st.caption("Monthly trend of median rent per square meter in Warsaw.")
@@ -75,9 +101,11 @@ with card():
 
 st.markdown("")
 
+# Gross yield proxy trend
 with card():
     st.markdown("### Yield proxy (gross, %)")
     st.caption("Monthly trend of estimated gross rental yield (rent/sale price ratio).")
+    # Convert to percentage for better readability
     yld_plot = yld.copy()
     yld_plot["gross_yield_pct"] = yld_plot["gross_yield_proxy"] * 100
     fig = px.line(yld_plot, x="month", y="gross_yield_pct")
