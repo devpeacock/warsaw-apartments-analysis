@@ -5,8 +5,9 @@ import plotly.express as px
 import sys
 from pathlib import Path
 
-# Add streamlit_app to path for imports
+# Add streamlit_app and src to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent))
+sys.path.insert(0, str(Path(__file__).parent.parent.parent / "src"))
 
 from components.loaders import (
     load_mart_city_month_sale,
