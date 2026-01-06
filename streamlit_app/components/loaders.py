@@ -1,4 +1,5 @@
-# streamlit_app/components/loaders.py
+"""Data loaders for Streamlit dashboard with DuckDB caching."""
+
 from __future__ import annotations
 
 from pathlib import Path
@@ -12,15 +13,17 @@ DEFAULT_DB_PATH = Path("data/processed/apartments.duckdb")
 
 
 def _connect(db_path: str | Path, read_only: bool = True) -> duckdb.DuckDBPyConnection:
+    """Open DuckDB connection with read-only mode by default."""
     return duckdb.connect(str(db_path), read_only=read_only)
 
 
-# -------------------------
-# Static views (cross-month dedup)
-# -------------------------
+# ============================================================================
+# Static Views (Cross-Month Deduplicated)
+# ============================================================================
 
 @st.cache_data(show_spinner=False)
 def load_sale_static(db_path: str | Path = DEFAULT_DB_PATH) -> pd.DataFrame:
+    """Load deduplicated sale listings from listings_sale_static view. Cached by Streamlit."""
     con = _connect(db_path, read_only=True)
     df = con.execute(
         """
@@ -34,6 +37,7 @@ def load_sale_static(db_path: str | Path = DEFAULT_DB_PATH) -> pd.DataFrame:
 
 @st.cache_data(show_spinner=False)
 def load_rent_static(db_path: str | Path = DEFAULT_DB_PATH) -> pd.DataFrame:
+    """Load deduplicated rental listings from listings_rent_static view. Cached by Streamlit."""
     con = _connect(db_path, read_only=True)
     df = con.execute(
         """
@@ -45,12 +49,13 @@ def load_rent_static(db_path: str | Path = DEFAULT_DB_PATH) -> pd.DataFrame:
     return df
 
 
-# -------------------------
-# Marts (time series)
-# -------------------------
+# ============================================================================
+# Marts (Time Series Aggregations)
+# ============================================================================
 
 @st.cache_data(show_spinner=False)
 def load_mart_city_month_sale(db_path: str | Path = DEFAULT_DB_PATH) -> pd.DataFrame:
+    """Load sale market time series: city-month aggregations. Cached by Streamlit."""
     con = _connect(db_path, read_only=True)
     df = con.execute(
         """
@@ -65,6 +70,7 @@ def load_mart_city_month_sale(db_path: str | Path = DEFAULT_DB_PATH) -> pd.DataF
 
 @st.cache_data(show_spinner=False)
 def load_mart_city_month_rent(db_path: str | Path = DEFAULT_DB_PATH) -> pd.DataFrame:
+    """Load rental market time series: city-month aggregations. Cached by Streamlit."""
     con = _connect(db_path, read_only=True)
     df = con.execute(
         """
@@ -79,6 +85,7 @@ def load_mart_city_month_rent(db_path: str | Path = DEFAULT_DB_PATH) -> pd.DataF
 
 @st.cache_data(show_spinner=False)
 def load_mart_city_month_yield_proxy(db_path: str | Path = DEFAULT_DB_PATH) -> pd.DataFrame:
+    """Load rental yield proxy time series: city-month aggregations. Cached by Streamlit."""
     con = _connect(db_path, read_only=True)
     df = con.execute(
         """
