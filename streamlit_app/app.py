@@ -9,7 +9,9 @@ import sys
 from pathlib import Path
 
 # Add src/ to Python path for apartments package
-sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
+ROOT = Path(__file__).resolve().parents[1]  # repo root, since app.py is in streamlit_app/
+SRC = ROOT / "src"
+sys.path.insert(0, str(SRC))
 
 import streamlit as st
 
