@@ -1,3 +1,9 @@
+"""Main entry point for the Warsaw Apartments Dashboard.
+
+This is a multi-page Streamlit dashboard for analyzing apartment prices in Warsaw.
+Navigate using the sidebar to explore sale prices, rental prices, rental yields, and time series trends.
+"""
+
 # streamlit_app/app.py
 import sys
 from pathlib import Path
@@ -7,7 +13,17 @@ sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
 import streamlit as st
 
+
+# ============================================================================
+# Page Configuration
+# ============================================================================
+
 st.set_page_config(page_title="Apartments Dashboard", layout="wide")
+
+
+# ============================================================================
+# Header
+# ============================================================================
 
 st.markdown(
     """
