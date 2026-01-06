@@ -1,3 +1,10 @@
+"""Diagnostic script for analyzing duplicate property listings across time.
+
+Identifies repeated properties using fingerprints and computes statistics about
+how often listings appear across multiple months. Useful for understanding
+data quality and market dynamics.
+"""
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -8,6 +15,10 @@ import pandas as pd
 
 from apartments.fingerprint import FingerprintConfig, add_property_fingerprint
 
+
+# ============================================================================
+# Data Structures
+# ============================================================================
 
 @dataclass(frozen=True)
 class DuplicateStats:
@@ -23,6 +34,10 @@ class DuplicateStats:
     multi_month_records_share: float
 
 
+# ============================================================================
+# Analysis Functions
+# ============================================================================
+
 def compute_repeat_stats(
     df: pd.DataFrame,
     *,
@@ -30,7 +45,7 @@ def compute_repeat_stats(
     month_col: str = "month",
     top_n: int = 20,
 ) -> Tuple[DuplicateStats, pd.DataFrame]:
-    """Compute repeat prevalence metrics and return summary + top groups."""
+    """Compute statistics about repeated property listings and return summary with top repeating properties."""
     required = {fingerprint_col, month_col}
     missing = [c for c in required if c not in df.columns]
     if missing:
@@ -71,7 +86,7 @@ def compute_repeat_stats(
 
 
 def load_parquet_filtered(path: Path) -> pd.DataFrame:
-    """Load parquet and apply minimal filtering required for fingerprinting."""
+    """Load parquet file and filter out records with missing or invalid location/area/price data."""
     df = pd.read_parquet(path)
     df = df.dropna(subset=["lat", "lon", "area_m2", "price", "month"])
     df = df[(df["area_m2"] > 0) & (df["price"] > 0)]
@@ -79,7 +94,7 @@ def load_parquet_filtered(path: Path) -> pd.DataFrame:
 
 
 def run_repeat_prevalence(parquet_path: Path, cfg: FingerprintConfig, *, top_n: int = 20) -> None:
-    """Run repeat prevalence diagnostics for a given dataset."""
+    """Analyze and print duplicate statistics for a dataset, showing overall metrics and top repeating properties."""
     df = load_parquet_filtered(parquet_path)
     df = add_property_fingerprint(df, cfg)
     stats, top_groups = compute_repeat_stats(df, top_n=top_n)
@@ -96,6 +111,10 @@ def run_repeat_prevalence(parquet_path: Path, cfg: FingerprintConfig, *, top_n: 
     print("\nTop repeating fingerprints:")
     print(top_groups.to_string(index=False))
 
+
+# ============================================================================
+# Main Execution
+# ============================================================================
 
 if __name__ == "__main__":
     project_root = Path(__file__).resolve().parents[1]
