@@ -1,19 +1,27 @@
+"""
+Data Loading and I/O Module.
+
+Handles loading raw CSV data from monthly apartment listings and saving/loading
+processed parquet datasets. Standardizes column names and extracts temporal metadata.
+"""
+
 from pathlib import Path
 import pandas as pd
 import re
 
-# =========================
-# Paths
-# =========================
+# ============================================================================
+# Path Configuration
+# ============================================================================
 
 DATA_RAW = Path("data/raw")
-SALE_PATH = DATA_RAW / "sale"
-RENT_PATH = DATA_RAW / "rent"
+SALE_PATH = DATA_RAW / "sale"      # Sale listings by month
+RENT_PATH = DATA_RAW / "rent"      # Rental listings by month
 
-# =========================
-# Column mappings
-# =========================
+# ============================================================================
+# Column Schema Mapping
+# ============================================================================
 
+# Maps raw CSV column names to standardized schema
 COLUMN_MAPPING = {
     "id": "listing_id",
     "city": "city",
@@ -46,14 +54,26 @@ COLUMN_MAPPING = {
 }
 
 
-# =========================
-# Helpers
-# =========================
+# ============================================================================
+# Helper Functions
+# ============================================================================
 
 def _extract_month_from_filename(filename: str) -> pd.Timestamp:
     """
-    Extract YYYY_MM from filename and return month as Timestamp (YYYY-MM-01).
-    Example: sale_2023_01.csv -> 2023-01-01
+    Extract month timestamp from filename pattern.
+    
+    Args:
+        filename: Filename with pattern *_YYYY_MM.csv or *_YYYY-MM.csv
+        
+    Returns:
+        Timestamp representing first day of month (YYYY-MM-01)
+        
+    Raises:
+        ValueError: If filename doesn't match expected pattern
+        
+    Example:
+        >>> _extract_month_from_filename("sale_2023_01.csv")
+        Timestamp('2023-01-01 00:00:00')
     """
     match = re.search(r"(20\d{2})[_-](\d{2})", filename)
     if not match:
@@ -65,29 +85,50 @@ def _extract_month_from_filename(filename: str) -> pd.Timestamp:
 
 def _standardize_columns(df: pd.DataFrame, column_mapping: dict) -> pd.DataFrame:
     """
-    Rename columns to a common schema.
+    Rename DataFrame columns to standardized schema.
+    
+    Args:
+        df: DataFrame with raw column names
+        column_mapping: Dict mapping raw names to standard names
+        
+    Returns:
+        DataFrame with renamed columns
     """
     return df.rename(columns=column_mapping)
 
 
-# =========================
-# Core loaders
-# =========================
+# ============================================================================
+# Core Data Loaders
+# ============================================================================
 
 def load_sale_monthly() -> pd.DataFrame:
     """
-    Load monthly SALE data, add month column, unify schema,
-    return long-format DataFrame.
+    Load all monthly sale listing CSV files.
+    
+    Reads all CSV files from data/raw/sale/, extracts month from filename,
+    adds market='sale' column, and standardizes column names.
+    
+    Returns:
+        Concatenated DataFrame with all sale listings in long format
+        
+    Raises:
+        ValueError: If no CSV files found in sale directory
+        
+    Example:
+        >>> df = load_sale_monthly()
+        >>> df['market'].unique()
+        array(['sale'], dtype=object)
     """
     dfs = []
 
     for file in SALE_PATH.glob("*.csv"):
         df = pd.read_csv(file)
 
+        # Add temporal and market metadata
         df["month"] = _extract_month_from_filename(file.name)
         df["market"] = "sale"
 
-        # ---- map columns to common schema ----
+        # Standardize column names
         df = _standardize_columns(df, COLUMN_MAPPING)
 
         dfs.append(df)
@@ -100,18 +141,32 @@ def load_sale_monthly() -> pd.DataFrame:
 
 def load_rent_monthly() -> pd.DataFrame:
     """
-    Load monthly RENT data, add month column, unify schema,
-    return long-format DataFrame.
+    Load all monthly rental listing CSV files.
+    
+    Reads all CSV files from data/raw/rent/, extracts month from filename,
+    adds market='rent' column, and standardizes column names.
+    
+    Returns:
+        Concatenated DataFrame with all rental listings in long format
+        
+    Raises:
+        ValueError: If no CSV files found in rent directory
+        
+    Example:
+        >>> df = load_rent_monthly()
+        >>> df['market'].unique()
+        array(['rent'], dtype=object)
     """
     dfs = []
 
     for file in RENT_PATH.glob("*.csv"):
         df = pd.read_csv(file)
 
+        # Add temporal and market metadata
         df["month"] = _extract_month_from_filename(file.name)
         df["market"] = "rent"
 
-        # ---- map columns to common schema ----
+        # Standardize column names
         df = _standardize_columns(df, COLUMN_MAPPING)
 
         dfs.append(df)
@@ -121,24 +176,49 @@ def load_rent_monthly() -> pd.DataFrame:
 
     return pd.concat(dfs, ignore_index=True)
 
-# =========================
-# Build dataset
-# =========================
+
+# ============================================================================
+# Processed Data Storage
+# ============================================================================
 
 DATA_PROCESSED = Path("data/processed")
 DATA_PROCESSED.mkdir(parents=True, exist_ok=True)
 
+
 def save_processed(df: pd.DataFrame, name: str) -> Path:
     """
-    Save a cleaned dataset to parquet in data/processed/.
+    Save DataFrame to parquet in processed data directory.
+    
+    Args:
+        df: DataFrame to save
+        name: Base filename (without extension)
+        
+    Returns:
+        Path to saved parquet file
+        
+    Example:
+        >>> path = save_processed(df, "sale_clean")
+        >>> print(path)
+        data/processed/sale_clean.parquet
     """
     path = DATA_PROCESSED / f"{name}.parquet"
     df.to_parquet(path, index=False)
     return path
 
+
 def load_processed(name: str) -> pd.DataFrame:
     """
-    Load a processed parquet dataset from data/processed/.
+    Load DataFrame from parquet in processed data directory.
+    
+    Args:
+        name: Base filename (without extension)
+        
+    Returns:
+        Loaded DataFrame
+        
+    Example:
+        >>> df = load_processed("sale_clean")
     """
     path = DATA_PROCESSED / f"{name}.parquet"
     return pd.read_parquet(path)
+
