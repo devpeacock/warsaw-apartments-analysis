@@ -1,3 +1,5 @@
+"""Rental listings dashboard page with KPI cards, distribution charts, and rent driver analysis."""
+
 # streamlit_app/pages/2_Rent.py
 import streamlit as st
 import sys
@@ -14,7 +16,11 @@ from apartments.viz import build_view, plot_hist, plot_box_by_category, plot_sca
 import pandas as pd
 import numpy as np
 
-# Helper functions for binning
+
+# ============================================================================
+# Helper Functions - Data Binning
+# ============================================================================
+
 def create_floor_bins(df):
     """Create floor bins: 0-5, 5-10, 10-15, 15-20, 20+"""
     if 'floor' not in df.columns:
@@ -56,17 +62,17 @@ def create_build_year_bins(df):
     )
     return df
 
+
+# ============================================================================
+# Helper Functions - Trend Calculation
+# ============================================================================
+
 def calculate_trend(df: pd.DataFrame, metric_func, has_month: bool = True) -> float | None:
     """
     Calculate month-over-month percentage change for a metric.
     
-    Args:
-        df: DataFrame with 'month' column
-        metric_func: Function to calculate metric (e.g., lambda df: df['price'].median())
-        has_month: Whether the data has a month column
-    
-    Returns:
-        Percentage change (e.g., 5.2 for +5.2%) or None if not enough data
+    Compares latest month vs previous month using provided metric function.
+    Returns percentage change (e.g., 5.2 for +5.2%) or None if insufficient data.
     """
     if not has_month or 'month' not in df.columns or len(df) == 0:
         return None
@@ -97,17 +103,26 @@ def calculate_trend(df: pd.DataFrame, metric_func, has_month: bool = True) -> fl
     pct_change = ((latest_value - prev_value) / prev_value) * 100
     return pct_change
 
-# -------------------------
-# Page UI
-# -------------------------
+
+# ============================================================================
+# Page Setup
+# ============================================================================
+
 inject_global_css()
 header("Rent", "Deep-dive into Warsaw rent listings (filters + distribution + drivers)")
 
+
+# ============================================================================
+# Data Loading and Filtering
+# ============================================================================
+
 df_base = load_rent_static()
 
+# Render sidebar filters and extract clip setting
 filters = render_sidebar(df_base)
 clip = bool(filters.pop("_clip", True))
 
+# Apply filters and compute outlier bounds
 df_view, bounds = build_view(
     df_base,
     filter_spec=filters,
@@ -120,12 +135,14 @@ df_view = create_floor_bins(df_view)
 df_view = create_floors_total_bins(df_view)
 df_view = create_build_year_bins(df_view)
 
-# -------------------------
-# KPI cards
-# -------------------------
+
+# ============================================================================
+# KPI Cards with Trends
+# ============================================================================
+
 k1, k2, k3, k4 = st.columns(4)
 
-# Calculate trends based on filtered data
+# Calculate month-over-month trends for each metric
 has_month = 'month' in df_view.columns
 trend_listings = calculate_trend(df_view, lambda df: len(df), has_month)
 trend_ppm2 = calculate_trend(df_view, lambda df: df['price_per_m2'].median(), has_month)
@@ -146,9 +163,11 @@ with k4:
 
 st.markdown("")
 
-# -------------------------
-# Distribution section (2 cards)
-# -------------------------
+
+# ============================================================================
+# Distribution Charts (Rent per m² analysis)
+# ============================================================================
+
 c1, c2 = st.columns(2)
 
 with c1:
@@ -184,10 +203,12 @@ with c2:
 
 st.markdown("")
 
-# -------------------------
-# Drivers section (2 cards side-by-side, independent controls)
-# -------------------------
 
+# ============================================================================
+# Rent Drivers Analysis (Scatter + Boxplots)
+# ============================================================================
+
+# Define available variables for analysis
 SCATTER_X_OPTIONS = {
     "Distance to centre (km)": "centre_distance",   # DEFAULT
     "Area (m²)": "area_m2",
@@ -206,14 +227,17 @@ SCATTER_X_OPTIONS = {
 }
 SCATTER_X_OPTIONS = {lbl: col for lbl, col in SCATTER_X_OPTIONS.items() if col in df_view.columns}
 
+# Categorical variables for boxplot comparison
 BOX_X_OPTIONS = {
     "Listing type": "listing_type",          # DEFAULT
     "District": "district",
     "Ownership": "ownership",
     "Building material": "building_material",
-    "Condition": "condition",    "Floor (binned)": "floor_bin",
+    "Condition": "condition",
+    "Floor (binned)": "floor_bin",
     "Total floors (binned)": "floors_total_bin",
-    "Build year (binned)": "build_year_bin",    "Has elevator": "has_elevator",
+    "Build year (binned)": "build_year_bin",
+    "Has elevator": "has_elevator",
     "Has balcony": "has_balcony",
     "Has parking space": "has_parking_space",
     "Has security": "has_security",
@@ -221,6 +245,7 @@ BOX_X_OPTIONS = {
 }
 BOX_X_OPTIONS = {lbl: col for lbl, col in BOX_X_OPTIONS.items() if col in df_view.columns}
 
+# Set default selections
 default_scatter_label = (
     "Distance to centre (km)"
     if "Distance to centre (km)" in SCATTER_X_OPTIONS
@@ -233,9 +258,7 @@ default_box_label = (
     else list(BOX_X_OPTIONS.keys())[0]
 )
 
-# -------------------------
-# Drivers section (2 cards side-by-side, independent controls)
-# -------------------------
+# Create two-column layout for analysis cards
 d1, d2 = st.columns(2)
 
 with d1:
