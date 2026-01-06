@@ -1,14 +1,14 @@
-# streamlit_app/components/ui.py
+"""UI components and styling for Streamlit dashboard with dark theme and custom cards."""
+
 from __future__ import annotations
 import streamlit as st
 from contextlib import contextmanager
 from functools import lru_cache
 
 
-
-# =========================
-# Inline icons (minimal, no deps)
-# =========================
+# ============================================================================
+# Inline SVG Icons
+# ============================================================================
 
 _ICONS = {
     "home": """
@@ -38,6 +38,7 @@ _ICONS = {
 
 @lru_cache(maxsize=64)
 def icon(name: str, size: int = 18) -> str:
+    """Get cached SVG icon HTML with specified size."""
     svg = _ICONS.get(name)
     if not svg:
         return ""
@@ -47,11 +48,16 @@ def icon(name: str, size: int = 18) -> str:
     )
 
 
+# ============================================================================
+# Global CSS Injection
+# ============================================================================
+
 def inject_global_css() -> None:
+    """Inject dark theme CSS with gradient backgrounds, card styling, and sidebar design."""
     st.markdown(
         """
 <style>
-/* --- App background --- */
+/* --- App background with radial gradients --- */
 .stApp {
   background: radial-gradient(1200px 600px at 20% 0%, rgba(16,196,212,0.10), transparent 55%),
               radial-gradient(900px 500px at 95% 10%, rgba(99,102,241,0.10), transparent 60%),
@@ -72,10 +78,10 @@ html, body, [class*="css"]  {
 }
 
 /* =========================
-   Sidebar (Lovable style)
+   Sidebar Styling
    ========================= */
 
-/* Sidebar container */
+/* Sidebar container with dark background */
 section[data-testid="stSidebar"] {
   background: rgba(12, 14, 18, 0.98) !important;
   border-right: 1px solid rgba(255,255,255,0.06) !important;
@@ -241,7 +247,7 @@ footer { visibility: hidden; }
 
 
 /* =========================
-   Cards (like Lovable)
+   Card Containers (Lovable-style)
    ========================= */
 
 :root{
@@ -253,7 +259,7 @@ footer { visibility: hidden; }
   --shadow: rgba(0,0,0,0.55);
 }
 
-/* Style columns that contain Plotly charts as cards */
+/* Style columns containing Plotly charts as gradient cards */
 [data-testid="column"]:has([data-testid="stPlotlyChart"]) {
   position: relative;
   border-radius: 18px;
@@ -352,7 +358,12 @@ footer { visibility: hidden; }
     )
 
 
+# ============================================================================
+# UI Components
+# ============================================================================
+
 def header(title: str, subtitle: str) -> None:
+    """Render page header with icon, title, and subtitle."""
     st.markdown(
         f"""
 <div style="display:flex;align-items:center;justify-content:space-between;gap:14px;margin-bottom:8px;">
@@ -376,7 +387,7 @@ def header(title: str, subtitle: str) -> None:
 
 @contextmanager
 def card():
-    """Context manager that wraps content in a styled card using Streamlit container."""
+    """Context manager for styled card container. Usage: with card(): st.plotly_chart(fig)"""
     # Create a container and target it with CSS via data-testid
     container = st.container()
     with container:
@@ -385,7 +396,7 @@ def card():
 
 def kpi_card(title: str, value: str, sub: str = "", trend: float | None = None) -> None:
     """
-    Display a KPI card with optional trend indicator.
+    Display KPI card with optional month-over-month trend indicator.
     
     Args:
         title: Card title
@@ -421,45 +432,6 @@ def kpi_card(title: str, value: str, sub: str = "", trend: float | None = None) 
         """,
         unsafe_allow_html=True,
     )
-
-
-'''
-/* =========================
-   Remove weird empty bars
-   ========================= */
-
-/* Hide streamlit skeletons (if present) */
-[data-testid="stSkeleton"] { display: none !important; }
-
-/* Some versions render skeleton-like placeholders as empty blocks */
-div:empty {
-  display: none !important;
-}
-
-/* But don't hide SVG defs or script/style */
-svg:empty, style:empty, script:empty { display: block !important; }
-
-/* Streamlit blocks sometimes keep spacing even if empty */
-[data-testid="stVerticalBlock"] > div:empty,
-[data-testid="stHorizontalBlock"] > div:empty,
-[data-testid="stColumn"] > div:empty {
-  display: none !important;
-  height: 0 !important;
-  margin: 0 !important;
-  padding: 0 !important;
-}
-
-/* If a placeholder is an empty element with min-height, kill it */
-[data-testid="stVerticalBlock"] div[style*="min-height"]:empty {
-  min-height: 0 !important;
-  height: 0 !important;
-}
-
-/* Sometimes "baseweb" wrappers create empty rounded bars */
-div[data-baseweb]:empty {
-  display: none !important;
-}
-'''
 
 
 
