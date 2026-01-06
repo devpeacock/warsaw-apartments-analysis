@@ -1,14 +1,21 @@
-# src/apartments/labels.py
+"""
+Display Labels and Mappings Module.
+
+Provides human-readable labels for categorical values and column names in the UI.
+Maps internal data values to user-friendly display text in English and Polish.
+"""
+
 from __future__ import annotations
 
 from dataclasses import dataclass
 from typing import Dict, Iterable, List, Tuple
 
 
-# -------------------------
-# Value label mappings (raw -> UI label)
-# -------------------------
+# ============================================================================
+# Value Label Mappings (Raw Value -> UI Label)
+# ============================================================================
 
+# Warsaw district names with Polish characters preserved
 DISTRICT_LABELS: Dict[str, str] = {
     "praga_północ": "Praga North",
     "praga_południe": "Praga South",
@@ -30,33 +37,37 @@ DISTRICT_LABELS: Dict[str, str] = {
     "wola": "Wola",
 }
 
+# Property type categories
 LISTING_TYPE_LABELS: Dict[str, str] = {
     "tenement": "Tenement",
     "blockOfFlats": "Block of flats",
     "apartmentBuilding": "Apartment building",
 }
 
+# Apartment condition quality levels
 CONDITION_LABELS: Dict[str, str] = {
     "low": "Standard",
     "premium": "Premium",
 }
 
+# Ownership types in Polish housing market
 OWNERSHIP_LABELS: Dict[str, str] = {
     "condominium": "Condominium",
     "cooperative": "Cooperative",
 }
 
+# Building construction material types
 BUILDING_MATERIAL_LABELS: Dict[str, str] = {
     "brick": "Brick",
     "concreteSlab": "Concrete slab",
 }
 
 
-# -------------------------
-# Column label mappings (colname -> UI label)
-# (optional, for consistent English naming)
-# -------------------------
+# ============================================================================
+# Column Label Mappings (Column Name -> UI Label)
+# ============================================================================
 
+# Maps internal column names to display-friendly English labels
 COLUMN_LABELS: Dict[str, str] = {
     "district": "District",
     "price": "Price (PLN)",
@@ -89,10 +100,11 @@ COLUMN_LABELS: Dict[str, str] = {
 }
 
 
-# -------------------------
-# Registry: which mapping belongs to which column
-# -------------------------
+# ============================================================================
+# Column-to-Mapping Registry
+# ============================================================================
 
+# Maps column names to their respective value label dictionaries
 VALUE_LABELS_BY_COLUMN: Dict[str, Dict[str, str]] = {
     "district": DISTRICT_LABELS,
     "listing_type": LISTING_TYPE_LABELS,
@@ -102,20 +114,46 @@ VALUE_LABELS_BY_COLUMN: Dict[str, Dict[str, str]] = {
 }
 
 
-# -------------------------
-# Helpers
-# -------------------------
+# ============================================================================
+# Label Helper Functions
+# ============================================================================
 
 def label_for_value(column: str, raw_value: str) -> str:
-    """raw -> label (fallback to raw if missing)"""
+    """
+    Get display label for a raw categorical value.
+    
+    Args:
+        column: Column name (e.g., 'district', 'listing_type')
+        raw_value: Raw value from data (e.g., 'mokotów', 'tenement')
+        
+    Returns:
+        Display label if mapping exists, otherwise raw value as string
+        
+    Example:
+        >>> label_for_value('district', 'mokotów')
+        'Mokotów'
+    """
     mapping = VALUE_LABELS_BY_COLUMN.get(column, {})
     return mapping.get(raw_value, str(raw_value))
 
 
 def build_display_to_raw_map(column: str, raw_values: Iterable[str]) -> Dict[str, str]:
     """
-    Build mapping: display_label -> raw_value
-    Ensures uniqueness of labels (if collision happens, appends ' [raw]' suffix).
+    Build reverse mapping from display labels to raw values.
+    
+    Handles collisions by appending '[raw_value]' suffix when multiple
+    raw values map to the same display label.
+    
+    Args:
+        column: Column name to get mapping for
+        raw_values: Iterable of raw values present in data
+        
+    Returns:
+        Dict mapping display labels to raw values
+        
+    Example:
+        >>> build_display_to_raw_map('district', ['mokotów', 'wola'])
+        {'Mokotów': 'mokotów', 'Wola': 'wola'}
     """
     mapping = VALUE_LABELS_BY_COLUMN.get(column, {})
     disp_to_raw: Dict[str, str] = {}
@@ -124,7 +162,7 @@ def build_display_to_raw_map(column: str, raw_values: Iterable[str]) -> Dict[str
         raw_s = str(raw)
         disp = mapping.get(raw_s, raw_s)
 
-        # Avoid collisions: two raw values might map to same display label
+        # Avoid collisions: add suffix if display label already used
         if disp in disp_to_raw and disp_to_raw[disp] != raw_s:
             disp = f"{disp} [{raw_s}]"
 
@@ -134,5 +172,17 @@ def build_display_to_raw_map(column: str, raw_values: Iterable[str]) -> Dict[str
 
 
 def column_label(col: str) -> str:
-    """colname -> UI label (fallback to a simple title)"""
+    """
+    Get display label for a column name.
+    
+    Args:
+        col: Internal column name (e.g., 'price_per_m2')
+        
+    Returns:
+        Display label if mapping exists, otherwise title-cased column name
+        
+    Example:
+        >>> column_label('price_per_m2')
+        'Price per m² (PLN)'
+    """
     return COLUMN_LABELS.get(col, col.replace("_", " ").title())
