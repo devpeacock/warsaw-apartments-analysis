@@ -1,4 +1,10 @@
 # streamlit_app/app.py
+import sys
+from pathlib import Path
+
+# Add src/ to Python path for apartments package
+sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
+
 import streamlit as st
 
 st.set_page_config(page_title="Apartments Dashboard", layout="wide")
