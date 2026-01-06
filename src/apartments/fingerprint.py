@@ -1,3 +1,10 @@
+"""
+Property Fingerprinting Module.
+
+Generates stable identifiers for properties to track listings across time when
+listing IDs change. Uses rounded coordinates, quantized area, and stable attributes.
+"""
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -9,13 +16,16 @@ import pandas as pd
 @dataclass(frozen=True)
 class FingerprintConfig:
     """
-    Configuration for generating a property-level fingerprint used to approximate
-    repeated listings across monthly snapshots when listing identifiers are unstable.
-
-    Notes:
-    - Coordinates are rounded to reduce sensitivity to minor coordinate jitter.
-    - Area is quantized to reduce sensitivity to minor measurement differences.
-    - The fingerprint combines multiple stable attributes to reduce false merges.
+    Configuration for property fingerprint generation.
+    
+    Attributes:
+        lat_round: Decimal places for latitude rounding (default: 4)
+        lon_round: Decimal places for longitude rounding (default: 4)
+        area_step: Quantization step for area in m² (default: 1.0)
+        fingerprint_cols: Additional stable columns to include
+        
+    Note:
+        Rounding reduces sensitivity to coordinate jitter and measurement variance.
     """
     lat_round: int = 4
     lon_round: int = 4
@@ -37,7 +47,16 @@ class FingerprintConfig:
 
 
 def _quantize(series: pd.Series, step: float) -> pd.Series:
-    """Quantize a numeric series to a fixed grid defined by `step`."""
+    """
+    Quantize numeric values to fixed grid.
+    
+    Args:
+        series: Numeric series to quantize
+        step: Grid size (must be > 0)
+        
+    Returns:
+        Quantized series aligned to grid
+    """
     if step <= 0:
         raise ValueError("area_step must be > 0")
     return (series / step).round(0) * step
@@ -45,8 +64,18 @@ def _quantize(series: pd.Series, step: float) -> pd.Series:
 
 def _normalize_for_key(series: pd.Series) -> pd.Series:
     """
-    Normalize a column to deterministic strings for fingerprinting.
-    Missing values are replaced with stable tokens.
+    Convert column to deterministic string representation.
+    
+    Handles missing values with stable tokens:
+    - Boolean: False
+    - Numeric: -999999
+    - Other: "<NA>"
+    
+    Args:
+        series: Column to normalize
+        
+    Returns:
+        String series suitable for fingerprint concatenation
     """
     if pd.api.types.is_bool_dtype(series) or str(series.dtype) == "boolean":
         return series.fillna(False).astype(int).astype(str)
@@ -67,7 +96,30 @@ def add_property_fingerprint(
     out_col: str = "property_fingerprint",
 ) -> pd.DataFrame:
     """
-    Add a composite fingerprint column to approximate repeated properties across time.
+    Generate composite fingerprint for property tracking across time.
+    
+    Creates stable identifier by combining rounded coordinates, quantized area,
+    and stable property attributes. Useful for detecting repeated listings when
+    listing IDs change between monthly snapshots.
+    
+    Args:
+        df: DataFrame with property listings
+        cfg: Fingerprint configuration
+        lat_col: Latitude column name
+        lon_col: Longitude column name
+        area_col: Area column name
+        out_col: Output fingerprint column name
+        
+    Returns:
+        DataFrame with new fingerprint column
+        
+    Raises:
+        ValueError: If required columns (lat, lon, area) are missing
+        
+    Example:
+        >>> cfg = FingerprintConfig(lat_round=4, lon_round=4, area_step=1.0)
+        >>> df = add_property_fingerprint(df, cfg)
+        >>> df['property_fingerprint'].head()
     """
     required = {lat_col, lon_col, area_col}
     missing = [c for c in required if c not in df.columns]
@@ -76,18 +128,25 @@ def add_property_fingerprint(
 
     x = df.copy()
 
+    # Round coordinates to reduce sensitivity to jitter
     x["lat_r"] = x[lat_col].round(cfg.lat_round)
     x["lon_r"] = x[lon_col].round(cfg.lon_round)
+    
+    # Quantize area to reduce measurement variance
     x["area_q"] = _quantize(x[area_col], cfg.area_step)
 
+    # Build key from stable attributes
     key_cols: list[str] = ["lat_r", "lon_r", "area_q"]
     for c in cfg.fingerprint_cols:
         if c in x.columns:
             key_cols.append(c)
 
+    # Normalize all key columns to strings
     for c in key_cols:
         x[c] = _normalize_for_key(x[c])
 
+    # Concatenate to create fingerprint
     x[out_col] = x[key_cols].agg("|".join, axis=1)
 
     return x
+
