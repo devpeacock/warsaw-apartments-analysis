@@ -1,3 +1,5 @@
+"""Rental yield analysis dashboard comparing rent and sale prices by category."""
+
 # streamlit_app/pages/3_Yield.py
 import streamlit as st
 import pandas as pd
@@ -17,7 +19,11 @@ from apartments.rental_yield import make_yield_df, yield_summary
 from apartments.labels import label_for_value, column_label
 import numpy as np
 
-# Helper functions for binning
+
+# ============================================================================
+# Helper Functions - Data Binning
+# ============================================================================
+
 def create_floor_bins(df):
     """Create floor bins: 0-5, 5-10, 10-15, 15-20, 20+"""
     if 'floor' not in df.columns:
@@ -59,16 +65,23 @@ def create_build_year_bins(df):
     )
     return df
 
-# -------------------------
-# Page UI
-# -------------------------
+
+# ============================================================================
+# Page Setup
+# ============================================================================
+
 inject_global_css()
 header("Yield", "Rental yield proxy analysis by category")
+
+
+# ============================================================================
+# Data Loading and Filtering
+# ============================================================================
 
 df_sale = load_sale_static()
 df_rent = load_rent_static()
 
-# Na Yield page filtrujemy najem (bo yield “na rent listingach”), ale benchmark z sale_static.
+# Apply filters to rental data (yield calculated on rent listings with sale benchmark)
 filters = render_sidebar(df_rent)
 clip = bool(filters.pop("_clip", True))
 
@@ -88,23 +101,36 @@ df_sale = create_floor_bins(df_sale)
 df_sale = create_floors_total_bins(df_sale)
 df_sale = create_build_year_bins(df_sale)
 
-# Available categories - only show if column exists in data
+
+# ============================================================================
+# Category Selection and Yield Calculation
+# ============================================================================
+
+# Build list of available categorical columns
 available_categories = []
 for cat in ["district", "condition", "rooms", "listing_type", "floor_bin", "floors_total_bin", "build_year_bin"]:
     if cat in df_rent_view.columns:
         available_categories.append(cat)
 
+# User selects grouping category
 category = st.selectbox(
     "Group by",
     available_categories,
     index=0 if "district" in available_categories else 0,
 )
 
+# Calculate yield by comparing rent to sale prices within each category
 df_yield = make_yield_df(df_sale, df_rent_view, category=category)
 summary = yield_summary(df_yield, group_col=category).reset_index()
 
+# Filter groups with minimum observations
 min_n = 10
 summary = summary[summary["n"] >= min_n].copy()
+
+
+# ============================================================================
+# KPI Cards
+# ============================================================================
 
 k1, k2, k3 = st.columns(3)
 
@@ -121,14 +147,20 @@ st.markdown("")
 
 st.markdown("")
 
+
+# ============================================================================
+# Yield Visualization by Category
+# ============================================================================
+
 with card():
     st.markdown("### Gross yield proxy by category")
     st.caption(f"Median gross rental yield estimated by {column_label(category)}. Adjust min observations to filter small groups.")
     
-    # Map raw values to display labels for better readability
+    # Map raw values to display labels for better chart readability
     summary_display = summary.copy()
     summary_display[category] = summary_display[category].apply(lambda v: label_for_value(category, str(v)))
     
+    # Create bar chart sorted by median yield
     fig = px.bar(
         summary_display.sort_values("median", ascending=False),
         x=category,
@@ -138,6 +170,11 @@ with card():
     apply_dashboard_theme(fig, f"Gross yield proxy – median by {column_label(category)}")
     fig.update_xaxes(title=column_label(category))
     st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
+
+
+# ============================================================================
+# Summary Table
+# ============================================================================
 
 with st.expander("Table"):
     st.dataframe(summary.sort_values("median", ascending=False), use_container_width=True)
