@@ -1,3 +1,5 @@
+"""Sale listings dashboard page with KPI cards, distribution charts, and price driver analysis."""
+
 # streamlit_app/pages/1_Sale.py
 import streamlit as st
 import sys
@@ -20,7 +22,11 @@ from apartments.viz import (
 import pandas as pd
 import numpy as np
 
-# Helper functions for binning
+
+# ============================================================================
+# Helper Functions - Data Binning
+# ============================================================================
+
 def create_floor_bins(df):
     """Create floor bins: 0-5, 5-10, 10-15, 15-20, 20+"""
     if 'floor' not in df.columns:
@@ -61,6 +67,11 @@ def create_build_year_bins(df):
         include_lowest=True
     )
     return df
+
+
+# ============================================================================
+# Helper Functions - Trend Calculation
+# ============================================================================
 
 def calculate_trend(df: pd.DataFrame, metric_func, has_month: bool = True) -> float | None:
     """
@@ -103,20 +114,26 @@ def calculate_trend(df: pd.DataFrame, metric_func, has_month: bool = True) -> fl
     pct_change = ((latest_value - prev_value) / prev_value) * 100
     return pct_change
 
-# -------------------------
-# Page UI
-# -------------------------
+
+# ============================================================================
+# Page Setup
+# ============================================================================
+
 inject_global_css()
 header("Sale", "Deep-dive into Warsaw sale listings (filters + distribution + drivers)")
 
-# -------------------------
-# Data
-# -------------------------
+
+# ============================================================================
+# Data Loading and Filtering
+# ============================================================================
+
 df_base = load_sale_static()
 
+# Render sidebar filters and extract clip setting
 filters = render_sidebar(df_base)
 clip = bool(filters.pop("_clip", True))
 
+# Apply filters and compute outlier bounds
 df_view, bounds = build_view(
     df_base,
     filter_spec=filters,
@@ -131,12 +148,14 @@ df_view = create_floor_bins(df_view)
 df_view = create_floors_total_bins(df_view)
 df_view = create_build_year_bins(df_view)
 
-# -------------------------
-# KPI cards
-# -------------------------
+
+# ============================================================================
+# KPI Cards with Trends
+# ============================================================================
+
 k1, k2, k3, k4 = st.columns(4)
 
-# Calculate trends based on filtered data
+# Calculate month-over-month trends for each metric
 has_month = 'month' in df_view.columns
 trend_listings = calculate_trend(df_view, lambda df: len(df), has_month)
 trend_ppm2 = calculate_trend(df_view, lambda df: df['price_per_m2'].median(), has_month)
@@ -157,9 +176,11 @@ with k4:
 
 st.markdown("")
 
-# -------------------------
-# Distribution section (2 cards)
-# -------------------------
+
+# ============================================================================
+# Distribution Charts (Price per m² analysis)
+# ============================================================================
+
 c1, c2 = st.columns(2)
 
 with c1:
@@ -195,10 +216,12 @@ with c2:
 
 st.markdown("")
 
-# -------------------------
-# Drivers section (2 cards side-by-side, independent controls)
-# -------------------------
 
+# ============================================================================
+# Price Drivers Analysis (Scatter + Boxplots)
+# ============================================================================
+
+# Define available variables for analysis
 SCATTER_X_OPTIONS = {
     "Distance to centre (km)": "centre_distance",   # DEFAULT
     "Area (m²)": "area_m2",
@@ -214,6 +237,7 @@ SCATTER_X_OPTIONS = {
 }
 SCATTER_X_OPTIONS = {lbl: col for lbl, col in SCATTER_X_OPTIONS.items() if col in df_view.columns}
 
+# Categorical variables for boxplot comparison
 BOX_X_OPTIONS = {
     "Listing type": "listing_type",          # DEFAULT
     "District": "district",
@@ -231,6 +255,7 @@ BOX_X_OPTIONS = {
 }
 BOX_X_OPTIONS = {lbl: col for lbl, col in BOX_X_OPTIONS.items() if col in df_view.columns}
 
+# Set default selections
 default_scatter_label = (
     "Distance to centre (km)"
     if "Distance to centre (km)" in SCATTER_X_OPTIONS
@@ -243,6 +268,7 @@ default_box_label = (
     else list(BOX_X_OPTIONS.keys())[0]
 )
 
+# Create two-column layout for analysis cards
 d1, d2 = st.columns(2)
 
 with d1:
@@ -296,6 +322,10 @@ with d2:
             st.info(f"Not enough data to display boxplots for this variable. ({e})")
 
 
+# ============================================================================
+# Data Preview and Debug Expanders
+# ============================================================================
+
 with st.expander("Preview (first 200 rows)"):
     if df_view.empty:
         st.warning("No data to display. Adjust filters.")
@@ -306,6 +336,7 @@ with st.expander("Debug"):
     st.write(f"Base: {len(df_base):,} | View: {len(df_view):,}")
     st.write(f"Columns: {len(df_view.columns)} | Shape: {df_view.shape}")
 
+    # Check for empty results with amenity filters
     if len(df_view) == 0 and any(k.startswith("has_") for k in filters):
         st.warning("⚠️ Amenity filters active but result is empty!")
         st.write("Sample values from base data:")
@@ -314,8 +345,9 @@ with st.expander("Debug"):
                 vals = df_base[col].value_counts().head(5)
                 st.write(f"  {col}: {vals.to_dict()}")
 
+    # Show active filters
     active = {k: v for k, v in filters.items() if v not in (None, [], (), "")}
     st.json(active if active else {"filters": "none"})
 
 
-# streamlit run streamlit_app/app.py
+# To run: streamlit run streamlit_app/app.py
