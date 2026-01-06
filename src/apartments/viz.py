@@ -1,3 +1,5 @@
+"""Visualization and filtering tools for apartment data analysis with Plotly dashboards."""
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -12,30 +14,23 @@ from apartments.labels import label_for_value, column_label
 Number = Union[int, float]
 Range = Tuple[Optional[Number], Optional[Number]]
 
-# Columns that should display as plain integers (years) without compact formatting
+# Columns that display as years (skip compact formatting)
 YEAR_COLUMNS = {"build_year", "year", "construction_year"}
 
 
+# ============================================================================
+# Filter System
+# ============================================================================
 
 @dataclass(frozen=True)
 class FilterSpec:
-    """
-    Declarative definition of a filter.
-
-    kind:
-      - "in_enum"   : membership with validation against an allowed set (categoricals)
-      - "range"     : numeric range (min, max)
-      - "bool_true" : keep rows where column == True (nullable booleans supported)
-    """
+    """Declarative filter: column, kind (in_enum/range/bool_true), and allowed values for categorical."""
     column: str
     kind: str
-    allowed: Optional[Sequence[str]] = None  # used for in_enum
+    allowed: Optional[Sequence[str]] = None
 
 
-# --------------------------------------------------------------------------------------
-# Allowed categorical values (based on your EDA dictionary)
-# --------------------------------------------------------------------------------------
-
+# Valid categorical values for filter validation
 ALLOWED: Dict[str, Sequence[str]] = {
     "listing_type": ("tenement", "blockOfFlats", "apartmentBuilding"),
     "ownership": ("condominium", "cooperative"),
@@ -106,6 +101,7 @@ FILTERS: Dict[str, FilterSpec] = {
 
 
 def _as_list(value: Any) -> list[Any]:
+    """Convert value to list, handling None, sequences, and scalars."""
     if value is None:
         return []
     if isinstance(value, (list, tuple, set)):
@@ -114,22 +110,7 @@ def _as_list(value: Any) -> list[Any]:
 
 
 def apply_filters(df: pd.DataFrame, spec: Dict[str, Any]) -> pd.DataFrame:
-    """
-    Apply UI-like filters to a dataframe using the FILTERS registry.
-
-    spec example:
-      {
-        "district": ["mokotów", "śródmieście"],
-        "area_m2": (40, 70),
-        "has_elevator": True,
-        "listing_type": ["blockOfFlats"],
-      }
-
-    Notes:
-    - Unknown filter names are ignored.
-    - None/empty values are ignored.
-    - Categorical values are validated against ALLOWED to avoid silent typos.
-    """
+    """Apply filters from spec dict: in_enum uses isin(), range clips min/max, bool_true keeps truthy values. Validates categorical values against ALLOWED."""
     out = df
 
     for name, value in spec.items():
@@ -179,12 +160,10 @@ def apply_filters(df: pd.DataFrame, spec: Dict[str, Any]) -> pd.DataFrame:
     return out.copy()
 
 
+# ============================================================================
+# Data Clipping Utilities
+# ============================================================================
 
-# --------------------------------------------------------------------------------------
-# Percentile bounds & clipping (visualization only)
-# --------------------------------------------------------------------------------------
-
-from typing import Any, Dict, Optional, Sequence, Tuple
 import matplotlib.pyplot as plt
 
 
@@ -196,12 +175,7 @@ def get_clip_bounds(
     p_low: float = 0.01,
     p_high: float = 0.99,
 ) -> Dict[str, Tuple[float, float]]:
-    """
-    Compute percentile-based clipping bounds for numeric columns.
-
-    By default (clip=True), bounds are computed at P1–P99.
-    If clip=False, an empty dict is returned and no clipping is applied downstream.
-    """
+    """Compute (p_low, p_high) percentile bounds for each column to clip outliers. Returns dict of {col: (lower, upper)}."""
     if not clip or len(cols) == 0:
         return {}
 
@@ -217,9 +191,7 @@ def get_clip_bounds(
 
 
 def clip_series(s: pd.Series, bounds: Optional[Tuple[float, float]] = None) -> pd.Series:
-    """
-    Clip a numeric series using (low, high) bounds. If bounds is None, return as-is.
-    """
+    """Clip series to (lower, upper) bounds, or return unchanged if bounds is None."""
     if bounds is None:
         return s
     lo, hi = bounds
@@ -233,11 +205,7 @@ def column_for_plot(
     bounds: Optional[Dict[str, Tuple[float, float]]] = None,
     clip: bool = True,
 ) -> pd.Series:
-    """
-    Extract a numeric column, drop NaNs, and optionally apply percentile clipping.
-
-    If clip=False, bounds are ignored even if provided.
-    """
+    """Extract column as numeric series, drop NaNs, apply optional clipping from bounds dict."""
     if col not in df.columns:
         raise ValueError(f"Column not found: {col}")
 
@@ -249,11 +217,12 @@ def column_for_plot(
     return clip_series(s, bounds.get(col))
 
 
-# --------------------------------------------------------------------------------------
-# Formatting helpers
-# --------------------------------------------------------------------------------------
+# ============================================================================
+# Matplotlib Formatting Utilities
+# ============================================================================
 
 def apply_plot_style(ax, *, grid_axis: str = "y") -> None:
+    """Apply clean matplotlib styling: remove top/right spines, optional y-axis grid, no x-grid."""
     # Remove spines
     ax.spines["top"].set_visible(False)
     ax.spines["right"].set_visible(False)
@@ -271,10 +240,7 @@ def apply_plot_style(ax, *, grid_axis: str = "y") -> None:
 
 
 def _format_compact(x: float) -> str:
-    """
-    Format numbers into compact human-readable strings:
-    9500 -> 9.5k, 1_250_000 -> 1.25M
-    """
+    """Format numbers compactly: 9500 -> '9.5k', 1250000 -> '1.25M'."""
     ax = abs(x)
     if ax >= 1_000_000:
         return f"{x/1_000_000:.2g}M"
@@ -286,10 +252,7 @@ def _format_compact(x: float) -> str:
 
 
 def set_compact_axis(ax, *, axis: str = "x", col: Optional[str] = None) -> None:
-    """
-    Apply compact tick formatting to x or y axis.
-    If col is a year column, skip formatting (let matplotlib use defaults).
-    """
+    """Apply compact tick formatting to x or y axis. Skips YEAR_COLUMNS to preserve year formatting."""
     from matplotlib.ticker import FuncFormatter
     
     # Skip formatting for year columns - use matplotlib defaults which are better for years
@@ -306,9 +269,9 @@ def set_compact_axis(ax, *, axis: str = "x", col: Optional[str] = None) -> None:
         raise ValueError("axis must be 'x' or 'y'")
 
 
-# --------------------------------------------------------------------------------------
-# Convenience wrapper: filters + clipping bounds
-# --------------------------------------------------------------------------------------
+# ============================================================================
+# High-Level View Builder
+# ============================================================================
 
 def build_view(
     df: pd.DataFrame,
@@ -319,16 +282,7 @@ def build_view(
     p_low: float = 0.01,
     p_high: float = 0.99,
 ) -> Tuple[pd.DataFrame, Dict[str, Tuple[float, float]]]:
-    """
-    Apply filters and compute clip bounds in one step.
-
-    Defaults
-    --------
-    - clip=True
-    - p_low=0.01, p_high=0.99  (P1–P99)
-
-    If clip=False, bounds returned will be empty and plots will not clip.
-    """
+    """Apply filters and compute P1-P99 clip bounds in one step. Returns (filtered_df, bounds_dict)."""
     df_view = apply_filters(df, filter_spec or {})
     bounds = get_clip_bounds(
         df_view,
@@ -340,17 +294,17 @@ def build_view(
     return df_view, bounds
 
 
+# ============================================================================
+# Plotly Charts and Theming
+# ============================================================================
 
-
-
-
-# --- Plotly charts (drop matplotlib for app/web look) ---
 import plotly.express as px
 import plotly.graph_objects as go
 
-# --- Plotly theming helpers ---
+
+# Plotly formatting utilities
 def _fmt_pln(v: float) -> str:
-    # 16923 -> "16.9k", 1250000 -> "1.25M"
+    """Format PLN values compactly: 16923 -> '16.9k', 1250000 -> '1.25M'."""
     av = abs(v)
     if av >= 1_000_000:
         return f"{v/1_000_000:.2g}M"
@@ -359,6 +313,7 @@ def _fmt_pln(v: float) -> str:
     return f"{v:.0f}"
 
 def _axis_title(col: str) -> str:
+    """Get human-readable axis title for column name."""
     mapping = {
         "price_per_m2": "Price per m² (PLN)",
         "price": "Price (PLN)",
@@ -385,6 +340,7 @@ def _axis_title(col: str) -> str:
     return mapping.get(col, col.replace("_", " ").title())
 
 def _apply_plotly_theme(fig, *, title: str | None = None) -> None:
+    """Apply dark theme styling to Plotly figure: transparent background, subtle grids, clean axes."""
     fig.update_layout(
         title=dict(text=title or "", x=0.0, xanchor="left", font=dict(size=16)),
         paper_bgcolor="rgba(0,0,0,0)",
@@ -421,6 +377,7 @@ def _apply_plotly_theme(fig, *, title: str | None = None) -> None:
 
 
 def _plotly_layout(fig, *, title: str | None = None) -> None:
+    """Convenience wrapper for _apply_plotly_theme."""
     _apply_plotly_theme(fig, title=title)
 
 
@@ -433,13 +390,14 @@ def plot_hist(
     bounds: Optional[Dict[str, Tuple[float, float]]] = None,
     clip: bool = True,
     bins: int = 30,
-    density: bool = False,          # kept for backward compat (ignored)
+    density: bool = False,
     title: Optional[str] = None,
     xlabel: Optional[str] = None,
     show_median: bool = True,
     median_mode: str = "line",      # kept for backward compat
     return_fig: bool = True,        # kept for backward compat
 ):
+    """Create Plotly histogram with optional clipping, compact formatting, median line, and dark theme."""
     s = column_for_plot(df, col, bounds=bounds, clip=clip)
 
     fig = px.histogram(
@@ -501,6 +459,7 @@ def plot_box(
     show_fliers: bool = False,  # plotly shows points via 'points'
     return_fig: bool = True,
 ):
+    """Create Plotly boxplot with optional clipping and outlier display."""
     s = column_for_plot(df, col, bounds=bounds, clip=clip)
     fig = go.Figure()
     fig.add_trace(go.Box(y=s, boxpoints=False if not show_fliers else "outliers"))
@@ -526,6 +485,7 @@ def plot_box_by_category(
     rotate_x: int = 45,
     return_fig: bool = True,
 ):
+    """Create grouped boxplot by category with min_n filtering, optional sorting (median/count), and display label mapping."""
     y = y or y_col
     cat = cat or category_col
     if not y or not cat:
@@ -604,6 +564,7 @@ def plot_scatter(
     trendline: bool = False,
     return_fig: bool = True,
 ):
+    """Create Plotly scatter plot with optional clipping, OLS trendline, and compact axis formatting."""
     xcol = x or x_col
     ycol = y or y_col
     if not xcol or not ycol:
@@ -650,6 +611,7 @@ def plot_scatter(
 
 
 def apply_dashboard_theme(fig, title: str):
+    """Apply consistent dark theme to Plotly figure: transparent background, subtle grids, teal markers."""
     fig.update_layout(
         title=title,
         paper_bgcolor="rgba(0,0,0,0)",
