@@ -1,65 +1,65 @@
 # Contributing Guide
 
-## Struktura kodu
+## Code Structure
 
-### Pakiet `apartments` (src/apartments/)
+### Package `apartments` (src/apartments/)
 
-Główny pakiet Python z modułami analitycznymi:
+Main Python package with analytical modules:
 
-- **cleaning.py** - Czyszczenie i walidacja danych
-- **fingerprint.py** - Tworzenie unikalnych identyfikatorów nieruchomości
-- **io.py** - Ładowanie danych z CSV i bazy danych
-- **labels.py** - Mapowania nazw kolumn i wartości dla UI
-- **location.py** - Geokodowanie i przypisywanie dzielnic
-- **rental_yield.py** - Kalkulacje rentowności wynajmu
-- **viz.py** - Funkcje wizualizacji Plotly
+- **cleaning.py** - Data cleaning and validation
+- **fingerprint.py** - Creating unique property identifiers
+- **io.py** - Loading data from CSV and database
+- **labels.py** - Column and value name mappings for UI
+- **location.py** - Geocoding and district assignment
+- **rental_yield.py** - Rental yield calculations
+- **viz.py** - Plotly visualization functions
 
-### Dashboard Streamlit (streamlit_app/)
+### Streamlit Dashboard (streamlit_app/)
 
-Struktura aplikacji wielostronicowej:
+Multi-page application structure:
 
 ```
 streamlit_app/
-├── app.py              # Strona główna
+├── app.py              # Home page
 ├── components/
-│   ├── loaders.py     # Ładowanie danych z DuckDB
-│   ├── sidebar.py     # Filtry w sidebarze
-│   └── ui.py          # Komponenty UI i CSS
+│   ├── loaders.py     # Loading data from DuckDB
+│   ├── sidebar.py     # Sidebar filters
+│   └── ui.py          # UI components and CSS
 └── pages/
-    ├── 1_Sale.py      # Analiza sprzedaży
-    ├── 2_Rent.py      # Analiza wynajmu
-    ├── 3_Yield.py     # Analiza rentowności
-    └── 4_Time_Series.py # Trendy czasowe
+    ├── 1_Sale.py      # Sale analysis
+    ├── 2_Rent.py      # Rent analysis
+    ├── 3_Yield.py     # Yield analysis
+    └── 4_Time_Series.py # Time trends
 ```
 
-## Workflow deweloperski
+## Development Workflow
 
-### 1. Dodawanie nowej funkcji do pakietu
+### 1. Adding new feature to package
 
 ```python
 # src/apartments/new_feature.py
 
 def new_analysis_function(df):
     """
-    Opis funkcji.
+    Function description.
     
     Args:
-        df: DataFrame z danymi
+        df: DataFrame with data
     
     Returns:
-        DataFrame z wynikami
+        DataFrame with results
     """
-    # Implementacja
+    # Implementation
     return result
 ```
 
-Dodaj importy do `__init__.py`:
+Add imports to `__init__.py`:
 ```python
 # src/apartments/__init__.py
 from .new_feature import new_analysis_function
 ```
 
-### 2. Dodawanie nowej strony do dashboardu
+### 2. Adding new page to dashboard
 
 ```python
 # streamlit_app/pages/5_New_Page.py
@@ -67,14 +67,14 @@ import streamlit as st
 from components.ui import inject_global_css, header
 
 inject_global_css()
-header("Tytuł", "Opis")
+header("Title", "Description")
 
-# Twoja analiza
+# Your analysis
 ```
 
-### 3. Modyfikowanie SQL views
+### 3. Modifying SQL views
 
-Edytuj `scripts/build_db.py`:
+Edit `scripts/build_db.py`:
 ```python
 con.execute("""
     CREATE VIEW my_new_view AS
@@ -83,20 +83,20 @@ con.execute("""
 """)
 ```
 
-Następnie przebuduj bazę:
+Then rebuild database:
 ```bash
 python scripts/build_db.py
 ```
 
-## Testowanie
+## Testing
 
-### Uruchom istniejące testy
+### Run existing tests
 
 ```bash
 pytest tests/
 ```
 
-### Dodaj nowy test
+### Add new test
 
 ```python
 # tests/test_new_feature.py
@@ -114,47 +114,47 @@ def test_new_function():
     assert result is not None
 ```
 
-## Konwencje kodu
+## Code Conventions
 
 ### Style
 
-- **Black** formatter dla formatowania
-- **Type hints** dla nowych funkcji
-- **Docstrings** w stylu Google
+- **Black** formatter for formatting
+- **Type hints** for new functions
+- **Docstrings** in Google style
 
 ```python
 def example_function(df: pd.DataFrame, col: str) -> float:
     """
-    Krótki opis funkcji.
+    Short function description.
     
     Args:
-        df: DataFrame z danymi
-        col: Nazwa kolumny do analizy
+        df: DataFrame with data
+        col: Column name to analyze
     
     Returns:
-        Wynik jako float
+        Result as float
     
     Raises:
-        ValueError: Jeśli kolumna nie istnieje
+        ValueError: If column doesn't exist
     """
     if col not in df.columns:
         raise ValueError(f"Column {col} not found")
     return df[col].mean()
 ```
 
-### Nazewnictwo
+### Naming
 
-- **Funkcje**: `snake_case`
-- **Klasy**: `PascalCase`
-- **Stałe**: `UPPER_CASE`
-- **Pliki**: `snake_case.py`
+- **Functions**: `snake_case`
+- **Classes**: `PascalCase`
+- **Constants**: `UPPER_CASE`
+- **Files**: `snake_case.py`
 
 ### Imports
 
-Grupuj importy w kolejności:
-1. Biblioteki standardowe
-2. Biblioteki zewnętrzne
-3. Lokalne moduły
+Group imports in order:
+1. Standard library
+2. External packages
+3. Local modules
 
 ```python
 # Standard library
@@ -170,11 +170,11 @@ from apartments.cleaning import clean_base
 from apartments.viz import plot_hist
 ```
 
-## Debugowanie
+## Debugging
 
 ### Streamlit
 
-Dodaj debugging print:
+Add debugging prints:
 ```python
 st.write("Debug:", variable)
 st.dataframe(df.head())
@@ -182,7 +182,7 @@ st.dataframe(df.head())
 
 ### DuckDB queries
 
-Test queries w Python:
+Test queries in Python:
 ```python
 import duckdb
 con = duckdb.connect('data/processed/apartments.duckdb')
@@ -192,35 +192,35 @@ print(result)
 
 ## Performance
 
-### Caching w Streamlit
+### Caching in Streamlit
 
-Użyj `@st.cache_data` dla funkcji ładujących dane:
+Use `@st.cache_data` for data loading functions:
 ```python
 @st.cache_data
 def load_data():
     return pd.read_csv("data.csv")
 ```
 
-### Optymalizacja SQL
+### SQL Optimization
 
-- Używaj widoków dla powtarzalnych zapytań
-- Indeksuj kolumny używane w JOIN
-- Agreguj w SQL, nie w Pandas
+- Use views for repeatable queries
+- Index columns used in JOINs
+- Aggregate in SQL, not in Pandas
 
-## Commit messages
+## Commit Messages
 
 Format: `type: description`
 
 Types:
-- `feat:` - nowa funkcjonalność
-- `fix:` - naprawa błędu
-- `docs:` - dokumentacja
-- `style:` - formatowanie kodu
-- `refactor:` - refaktoryzacja
-- `test:` - testy
-- `chore:` - maintanance
+- `feat:` - new feature
+- `fix:` - bug fix
+- `docs:` - documentation
+- `style:` - code formatting
+- `refactor:` - refactoring
+- `test:` - tests
+- `chore:` - maintenance
 
-Przykłady:
+Examples:
 ```
 feat: add district comparison chart to Sale page
 fix: handle missing values in price_per_m2 calculation
@@ -229,22 +229,22 @@ docs: update README with new setup instructions
 
 ## Troubleshooting
 
-### Problem: Streamlit nie widzi zmian w pakiecie
+### Issue: Streamlit doesn't see package changes
 
 ```bash
 pip install -e . --force-reinstall --no-deps
 ```
 
-### Problem: DuckDB locked
+### Issue: DuckDB locked
 
-Zamknij wszystkie połączenia:
+Close all connections:
 ```python
 con.close()
 ```
 
-### Problem: Plotly chart nie wyświetla się
+### Issue: Plotly chart doesn't display
 
-Sprawdź czy używasz `st.plotly_chart()`:
+Check if using `st.plotly_chart()`:
 ```python
 import plotly.express as px
 fig = px.line(df, x='date', y='price')
