@@ -348,6 +348,3 @@ with st.expander("Debug"):
     # Show active filters
     active = {k: v for k, v in filters.items() if v not in (None, [], (), "")}
     st.json(active if active else {"filters": "none"})
-
-
-# To run: streamlit run streamlit_app/app.py

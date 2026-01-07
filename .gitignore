@@ -42,8 +42,7 @@ venv.bak/
 *.swo
 *~
 
-# Data (surowe dane – nie wrzucamy)
-data/raw/*
+# Data (database is built automatically from raw CSVs)
 data/processed/*.duckdb
 data/processed/*.db
 

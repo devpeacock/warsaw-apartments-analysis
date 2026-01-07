@@ -47,26 +47,7 @@ def yield_summary(
     yield_col: str = "gross_yield_pct",
 ) -> pd.DataFrame:
     """
-    Aggregate rental yield statistics by group.
-    
-    Computes count, median, quartiles, and mean of yield percentages
-    for each group, sorted by median yield descending.
-    
-    Args:
-        df_yield: DataFrame with yield calculations
-        group_col: Column name to group by (e.g., 'district', 'listing_type')
-        yield_col: Column name containing yield percentages (default: 'gross_yield_pct')
-        
-    Returns:
-        DataFrame with columns: n (count), median, p25, p75, mean
-        Indexed by group_col, sorted by median descending
-        
-    Example:
-        >>> summary = yield_summary(yield_df, group_col='district')
-        >>> summary.head()
-                     n  median    p25    p75   mean
-        district                                    
-        mokotów    150    5.2   4.8    5.6    5.3
+    Simple aggregated table for yield analysis.
     """
     return (
         df_yield

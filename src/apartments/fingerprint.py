@@ -96,30 +96,7 @@ def add_property_fingerprint(
     out_col: str = "property_fingerprint",
 ) -> pd.DataFrame:
     """
-    Generate composite fingerprint for property tracking across time.
-    
-    Creates stable identifier by combining rounded coordinates, quantized area,
-    and stable property attributes. Useful for detecting repeated listings when
-    listing IDs change between monthly snapshots.
-    
-    Args:
-        df: DataFrame with property listings
-        cfg: Fingerprint configuration
-        lat_col: Latitude column name
-        lon_col: Longitude column name
-        area_col: Area column name
-        out_col: Output fingerprint column name
-        
-    Returns:
-        DataFrame with new fingerprint column
-        
-    Raises:
-        ValueError: If required columns (lat, lon, area) are missing
-        
-    Example:
-        >>> cfg = FingerprintConfig(lat_round=4, lon_round=4, area_step=1.0)
-        >>> df = add_property_fingerprint(df, cfg)
-        >>> df['property_fingerprint'].head()
+    Add a composite fingerprint column to approximate repeated properties across time.
     """
     required = {lat_col, lon_col, area_col}
     missing = [c for c in required if c not in df.columns]

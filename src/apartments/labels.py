@@ -119,41 +119,15 @@ VALUE_LABELS_BY_COLUMN: Dict[str, Dict[str, str]] = {
 # ============================================================================
 
 def label_for_value(column: str, raw_value: str) -> str:
-    """
-    Get display label for a raw categorical value.
-    
-    Args:
-        column: Column name (e.g., 'district', 'listing_type')
-        raw_value: Raw value from data (e.g., 'mokotów', 'tenement')
-        
-    Returns:
-        Display label if mapping exists, otherwise raw value as string
-        
-    Example:
-        >>> label_for_value('district', 'mokotów')
-        'Mokotów'
-    """
+    """raw -> label (fallback to raw if missing)"""
     mapping = VALUE_LABELS_BY_COLUMN.get(column, {})
     return mapping.get(raw_value, str(raw_value))
 
 
 def build_display_to_raw_map(column: str, raw_values: Iterable[str]) -> Dict[str, str]:
     """
-    Build reverse mapping from display labels to raw values.
-    
-    Handles collisions by appending '[raw_value]' suffix when multiple
-    raw values map to the same display label.
-    
-    Args:
-        column: Column name to get mapping for
-        raw_values: Iterable of raw values present in data
-        
-    Returns:
-        Dict mapping display labels to raw values
-        
-    Example:
-        >>> build_display_to_raw_map('district', ['mokotów', 'wola'])
-        {'Mokotów': 'mokotów', 'Wola': 'wola'}
+    Build mapping: display_label -> raw_value
+    Ensures uniqueness of labels (if collision happens, appends ' [raw]' suffix).
     """
     mapping = VALUE_LABELS_BY_COLUMN.get(column, {})
     disp_to_raw: Dict[str, str] = {}
@@ -172,17 +146,5 @@ def build_display_to_raw_map(column: str, raw_values: Iterable[str]) -> Dict[str
 
 
 def column_label(col: str) -> str:
-    """
-    Get display label for a column name.
-    
-    Args:
-        col: Internal column name (e.g., 'price_per_m2')
-        
-    Returns:
-        Display label if mapping exists, otherwise title-cased column name
-        
-    Example:
-        >>> column_label('price_per_m2')
-        'Price per m² (PLN)'
-    """
+    """colname -> UI label (fallback to a simple title)"""
     return COLUMN_LABELS.get(col, col.replace("_", " ").title())

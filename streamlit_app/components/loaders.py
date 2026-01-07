@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import subprocess
+import sys
 from pathlib import Path
 
 import duckdb
@@ -12,8 +14,30 @@ import streamlit as st
 DEFAULT_DB_PATH = Path("data/processed/apartments.duckdb")
 
 
+def _ensure_database_exists(db_path: Path) -> None:
+    """Build database automatically if it doesn't exist."""
+    if not db_path.exists():
+        st.info("🔨 Building database for the first time... This may take a moment.")
+        
+        # Run build_dataset.py first to create parquet files
+        build_dataset_script = Path("scripts/build_dataset.py")
+        if build_dataset_script.exists():
+            subprocess.run([sys.executable, str(build_dataset_script)], check=True)
+        
+        # Run build_db.py to create DuckDB database
+        build_db_script = Path("scripts/build_db.py")
+        if build_db_script.exists():
+            subprocess.run([sys.executable, str(build_db_script)], check=True)
+            st.success("✅ Database built successfully!")
+        else:
+            st.error(f"Cannot find build script: {build_db_script}")
+            st.stop()
+
+
 def _connect(db_path: str | Path, read_only: bool = True) -> duckdb.DuckDBPyConnection:
     """Open DuckDB connection with read-only mode by default."""
+    db_path = Path(db_path)
+    _ensure_database_exists(db_path)
     return duckdb.connect(str(db_path), read_only=read_only)
 
 
