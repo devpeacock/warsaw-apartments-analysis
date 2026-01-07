@@ -67,7 +67,9 @@ def inject_global_css() -> None:
 
 /* --- Typography --- */
 html, body, [class*="css"]  {
-  font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 /* --- Remove Streamlit paddings a bit, more airy --- */
@@ -259,8 +261,8 @@ footer { visibility: hidden; }
   --shadow: rgba(0,0,0,0.55);
 }
 
-/* Style columns containing Plotly charts as gradient cards */
-[data-testid="column"]:has([data-testid="stPlotlyChart"]) {
+/* Fallback: Style ALL columns with Plotly charts (works in all browsers) */
+[data-testid="column"] {
   position: relative;
   border-radius: 18px;
   padding: 18px 18px 14px 18px;
@@ -277,27 +279,61 @@ footer { visibility: hidden; }
   box-shadow:
     0 18px 45px var(--shadow),
     inset 0 1px 0 rgba(255,255,255,0.06);
+  -webkit-backdrop-filter: blur(10px);
   backdrop-filter: blur(10px);
 }
 
+/* Modern browsers: only style columns containing Plotly charts (overrides above if supported) */
+@supports selector(:has(*)) {
+  [data-testid="column"] {
+    /* Reset styles for empty columns */
+    background: transparent;
+    border: none;
+    box-shadow: none;
+    padding: 0;
+  }
+  
+  [data-testid="column"]:has([data-testid="stPlotlyChart"]) {
+    position: relative;
+    border-radius: 18px;
+    padding: 18px 18px 14px 18px;
+    background:
+      radial-gradient(1200px 420px at 10% 0%,
+        rgba(32,201,214,0.14) 0%,
+        rgba(32,201,214,0.06) 28%,
+        rgba(255,255,255,0.00) 60%),
+      linear-gradient(180deg, var(--card1) 0%, var(--card2) 100%);
+    border: 1px solid var(--stroke);
+    box-shadow:
+      0 18px 45px var(--shadow),
+      inset 0 1px 0 rgba(255,255,255,0.06);
+    -webkit-backdrop-filter: blur(10px);
+    backdrop-filter: blur(10px);
+  }
+}
+
 /* subtle inner highlight ring */
-[data-testid="column"]:has([data-testid="stPlotlyChart"])::after{
+[data-testid="column"]::after{
   content:"";
   position:absolute;
   inset:0;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
   border-radius:18px;
   pointer-events:none;
   border: 1px solid var(--stroke2);
 }
 
 /* make plotly full-bleed inside cards */
-[data-testid="column"]:has([data-testid="stPlotlyChart"]) .js-plotly-plot,
-[data-testid="column"]:has([data-testid="stPlotlyChart"]) [data-testid="stPlotlyChart"]{
+[data-testid="column"] .js-plotly-plot,
+[data-testid="column"] [data-testid="stPlotlyChart"]{
   margin-top: 6px;
 }
 
 /* remove extra vertical gaps Streamlit adds around blocks inside cards */
-[data-testid="column"]:has([data-testid="stPlotlyChart"]) [data-testid="stVerticalBlock"]{
+[data-testid="column"] [data-testid="stVerticalBlock"]{
   gap: 0.65rem;
 }
 
@@ -316,6 +352,7 @@ footer { visibility: hidden; }
   box-shadow:
     0 18px 45px var(--shadow),
     inset 0 1px 0 rgba(255,255,255,0.06);
+  -webkit-backdrop-filter: blur(10px);
   backdrop-filter: blur(10px);
 }
 
@@ -323,6 +360,10 @@ footer { visibility: hidden; }
   content:"";
   position:absolute;
   inset:0;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
   border-radius:18px;
   pointer-events:none;
   border: 1px solid var(--stroke2);
