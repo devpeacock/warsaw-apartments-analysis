@@ -22,10 +22,10 @@ from .viz import (
 )
 
 # Location utilities
-from .location import assign_districts
+from .location import normalize_city, filter_city, assign_district_warsaw
 
 # Labels and mappings
-from .labels import build_display_to_raw_map, column_label
+from .labels import label_for_value, build_display_to_raw_map, column_label
 
 # Rental yield calculations
 from .rental_yield import make_yield_df, yield_summary
@@ -45,8 +45,11 @@ __all__ = [
     "plot_scatter",
     "apply_dashboard_theme",
     # Location
-    "assign_districts",
+    "normalize_city",
+    "filter_city",
+    "assign_district_warsaw",
     # Labels
+    "label_for_value",
     "build_display_to_raw_map",
     "column_label",
     # Rental yield
