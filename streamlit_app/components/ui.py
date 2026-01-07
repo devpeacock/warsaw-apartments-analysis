@@ -72,11 +72,20 @@ html, body, [class*="css"]  {
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* --- Remove Streamlit paddings a bit, more airy --- */
+/* --- Main content container - proper centering for all browsers --- */
 .main .block-container {
   padding-top: 1.1rem;
   padding-bottom: 2.2rem;
   max-width: 1240px;
+  margin-left: auto !important;
+  margin-right: auto !important;
+  width: 100% !important;
+}
+
+/* Ensure content doesn't overflow */
+.main {
+  max-width: 100%;
+  overflow-x: hidden;
 }
 
 /* =========================
@@ -150,15 +159,37 @@ section[data-testid="stSidebar"] label {
   font-size: 12px !important;
 }
 
-/* Input boxes */
-section[data-testid="stSidebar"] input,
+/* Input boxes - force dark theme across all browsers */
+section[data-testid="stSidebar"] input[type="text"],
+section[data-testid="stSidebar"] input[type="number"],
 section[data-testid="stSidebar"] textarea,
 section[data-testid="stSidebar"] .stMultiSelect div[role="combobox"],
-section[data-testid="stSidebar"] .stSelectbox div[role="combobox"] {
-  background: rgba(255,255,255,0.05) !important;
-  border: 1px solid rgba(255,255,255,0.10) !important;
-  border-radius: 12px !important;
-  color: rgba(255,255,255,0.92) !important;
+section[data-testid="stSidebar"] .stSelectbox div[role="combobox"],
+section[data-testid="stSidebar"] input,
+section[data-testid="stSidebar"] select {
+  background-color: rgba(30, 35, 45, 0.95) !important;
+  background: rgba(30, 35, 45, 0.95) !important;
+  border: 1px solid rgba(255,255,255,0.15) !important;
+  border-radius: 8px !important;
+  color: rgba(255,255,255,0.95) !important;
+  -webkit-appearance: none !important;
+  -moz-appearance: none !important;
+  appearance: none !important;
+}
+
+/* Input focus state */
+section[data-testid="stSidebar"] input:focus,
+section[data-testid="stSidebar"] textarea:focus,
+section[data-testid="stSidebar"] select:focus {
+  outline: none !important;
+  border-color: rgba(32,201,214,0.5) !important;
+  box-shadow: 0 0 0 2px rgba(32,201,214,0.15) !important;
+}
+
+/* Placeholder text */
+section[data-testid="stSidebar"] input::placeholder,
+section[data-testid="stSidebar"] textarea::placeholder {
+  color: rgba(255,255,255,0.4) !important;
 }
 
 /* Slider track */
@@ -212,13 +243,24 @@ h3 { font-size: 16px; opacity: 0.92; }
   margin-top: 2px;
 }
 
-/* --- Inputs --- */
+/* --- Inputs in main content area --- */
 div[data-baseweb="select"] > div,
 div[data-baseweb="input"] > div,
 div[data-baseweb="textarea"] > div {
-  background: rgba(255,255,255,0.04) !important;
-  border: 1px solid rgba(255,255,255,0.10) !important;
-  border-radius: 12px !important;
+  background-color: rgba(30, 35, 45, 0.8) !important;
+  background: rgba(30, 35, 45, 0.8) !important;
+  border: 1px solid rgba(255,255,255,0.12) !important;
+  border-radius: 10px !important;
+  color: rgba(255,255,255,0.95) !important;
+}
+
+/* Input elements inside baseweb containers */
+div[data-baseweb="select"] input,
+div[data-baseweb="input"] input,
+div[data-baseweb="textarea"] textarea {
+  background-color: transparent !important;
+  color: rgba(255,255,255,0.95) !important;
+  -webkit-text-fill-color: rgba(255,255,255,0.95) !important;
 }
 
 div[data-baseweb="slider"] {
