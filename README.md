@@ -1,10 +1,9 @@
-# Apartments Prices (Warsaw) — Python + SQL
-
-Warsaw apartment price analysis using Python, DuckDB, and Streamlit.
-
 ## Warsaw Apartments Analytics Dashboard
 
 This project is a **functional analytics platform for the Warsaw residential real estate market**, designed around structured data processing, fast analytical queries, and fully interactive exploration of market dynamics. The focus is on **what the system does**: how data is prepared, queried, filtered, and analyzed in a repeatable and extensible way. This project is built using Python, DuckDB, and Streamlit.
+
+> 🌐 **Live demo:** An interactive version of the dashboard is available at  
+> https://warsaw-apartments-analysis.streamlit.app
 
 ## Overview
 
