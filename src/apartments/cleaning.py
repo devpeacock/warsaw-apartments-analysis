@@ -43,7 +43,9 @@ from apartments.location import (
 # ============================================================================
 
 # Path to Warsaw districts GeoJSON for geographic assignment
-PROJECT_ROOT = Path(__file__).resolve().parents[2]
+# Use current working directory as project root (works for both local and Streamlit Cloud)
+import os
+PROJECT_ROOT = Path(os.getenv("STREAMLIT_RUNTIME_ROOT", Path.cwd()))
 WARSAW_DISTRICTS_PATH = PROJECT_ROOT / "data" / "reference" / "warsaw_districts.geojson"
 
 # Required columns that must be present in raw data
@@ -164,7 +166,7 @@ def deduplicate_within_month(
     return df
 
 
-def clean_base(df: pd.DataFrame) -> pd.DataFrame:
+def clean_base(df: pd.DataFrame, *, districts_path: Path | None = None) -> pd.DataFrame:
     """
     Minimal, reproducible cleaning:
     - validates required columns
@@ -220,9 +222,10 @@ def clean_base(df: pd.DataFrame) -> pd.DataFrame:
     out = filter_city(out, city="warszawa")
 
     # Step 12: Assign Warsaw district via geospatial join
+    _districts_path = districts_path if districts_path is not None else WARSAW_DISTRICTS_PATH
     out = assign_district_warsaw(
         out,
-        districts_path=WARSAW_DISTRICTS_PATH,
+        districts_path=_districts_path,
         districts_name_col="name",  # GeoJSON column with district name
         out_col="district",
         keep_outside=True,          # Keep listings outside district boundaries
