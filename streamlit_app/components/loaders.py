@@ -17,8 +17,6 @@ DEFAULT_DB_PATH = Path("data/processed/apartments.duckdb")
 def _ensure_database_exists(db_path: Path) -> None:
     """Build database automatically if it doesn't exist."""
     if not db_path.exists():
-        st.info("🔨 Building database for the first time... This may take a moment.")
-        
         # Run build_dataset.py first to create parquet files
         build_dataset_script = Path("scripts/build_dataset.py")
         if build_dataset_script.exists():
@@ -28,7 +26,6 @@ def _ensure_database_exists(db_path: Path) -> None:
         build_db_script = Path("scripts/build_db.py")
         if build_db_script.exists():
             subprocess.run([sys.executable, str(build_db_script)], check=True)
-            st.success("✅ Database built successfully!")
         else:
             st.error(f"Cannot find build script: {build_db_script}")
             st.stop()
