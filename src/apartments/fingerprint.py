@@ -54,7 +54,7 @@ def _quantize(series: pd.Series, step: float) -> pd.Series:
         series: Numeric series to quantize
         step: Grid size (must be > 0)
         
-    Returns:
+    Returns:u7 
         Quantized series aligned to grid
     """
     if step <= 0:
