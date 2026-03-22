@@ -1,9 +1,3 @@
-Student: Tymoteusz Pawełczyk
-Dataset:
-Original dataset link:
-https://www.kaggle.com/datasets/krzysztofjamroz/apartment-prices-in-poland/data
-Note: Datasets are saved in data/raw
-
 ## Warsaw Apartments Analytics Dashboard
 
 This project is a **functional analytics platform for the Warsaw residential real estate market**, designed around structured data processing, fast analytical queries, and fully interactive exploration of market dynamics. The focus is on **what the system does**: how data is prepared, queried, filtered, and analyzed in a repeatable and extensible way. This project is built using Python, DuckDB, and Streamlit.
